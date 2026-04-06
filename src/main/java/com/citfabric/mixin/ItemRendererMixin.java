@@ -4,9 +4,9 @@ import com.citfabric.CITRule;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.ItemRenderer;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.item.ItemRenderer;
 import net.minecraft.client.resources.model.BakedModel;
 import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
@@ -28,7 +28,6 @@ public class ItemRendererMixin {
         if (rule == null) return;
         ci.cancel();
 
-        // Apply display-context transforms from the vanilla model
         Minecraft mc = Minecraft.getInstance();
         BakedModel model = mc.getItemRenderer().getModel(stack, level, mc.player, seed);
         poseStack.pushPose();
@@ -37,21 +36,20 @@ public class ItemRendererMixin {
         model.getTransforms().getTransform(ctx).apply(isLeft, poseStack);
         poseStack.translate(-0.5, -0.5, -0.5);
 
-        // Render flat double-sided quad with our CIT texture
         RenderType rt = RenderType.itemEntityTranslucentCull(rule.textureKey);
         VertexConsumer vc = bufferSource.getBuffer(rt);
         PoseStack.Pose pose = poseStack.last();
 
-        // Front face
-        vc.addVertex(pose.pose(),0f,0f,0.005f).setColor(-1).setUv(0f,1f).setOverlay(packedOverlay).setLight(packedLight).setNormal(pose.normal(),0f,0f,1f);
-        vc.addVertex(pose.pose(),1f,0f,0.005f).setColor(-1).setUv(1f,1f).setOverlay(packedOverlay).setLight(packedLight).setNormal(pose.normal(),0f,0f,1f);
-        vc.addVertex(pose.pose(),1f,1f,0.005f).setColor(-1).setUv(1f,0f).setOverlay(packedOverlay).setLight(packedLight).setNormal(pose.normal(),0f,0f,1f);
-        vc.addVertex(pose.pose(),0f,1f,0.005f).setColor(-1).setUv(0f,0f).setOverlay(packedOverlay).setLight(packedLight).setNormal(pose.normal(),0f,0f,1f);
-        // Back face
-        vc.addVertex(pose.pose(),1f,0f,-0.005f).setColor(-1).setUv(0f,1f).setOverlay(packedOverlay).setLight(packedLight).setNormal(pose.normal(),0f,0f,-1f);
-        vc.addVertex(pose.pose(),0f,0f,-0.005f).setColor(-1).setUv(1f,1f).setOverlay(packedOverlay).setLight(packedLight).setNormal(pose.normal(),0f,0f,-1f);
-        vc.addVertex(pose.pose(),0f,1f,-0.005f).setColor(-1).setUv(1f,0f).setOverlay(packedOverlay).setLight(packedLight).setNormal(pose.normal(),0f,0f,-1f);
-        vc.addVertex(pose.pose(),1f,1f,-0.005f).setColor(-1).setUv(0f,0f).setOverlay(packedOverlay).setLight(packedLight).setNormal(pose.normal(),0f,0f,-1f);
+        // In 1.21.11 setNormal takes PoseStack.Pose, not Matrix3f
+        vc.addVertex(pose.pose(),0f,0f,0.005f).setColor(-1).setUv(0f,1f).setOverlay(packedOverlay).setLight(packedLight).setNormal(pose,0f,0f,1f);
+        vc.addVertex(pose.pose(),1f,0f,0.005f).setColor(-1).setUv(1f,1f).setOverlay(packedOverlay).setLight(packedLight).setNormal(pose,0f,0f,1f);
+        vc.addVertex(pose.pose(),1f,1f,0.005f).setColor(-1).setUv(1f,0f).setOverlay(packedOverlay).setLight(packedLight).setNormal(pose,0f,0f,1f);
+        vc.addVertex(pose.pose(),0f,1f,0.005f).setColor(-1).setUv(0f,0f).setOverlay(packedOverlay).setLight(packedLight).setNormal(pose,0f,0f,1f);
+
+        vc.addVertex(pose.pose(),1f,0f,-0.005f).setColor(-1).setUv(0f,1f).setOverlay(packedOverlay).setLight(packedLight).setNormal(pose,0f,0f,-1f);
+        vc.addVertex(pose.pose(),0f,0f,-0.005f).setColor(-1).setUv(1f,1f).setOverlay(packedOverlay).setLight(packedLight).setNormal(pose,0f,0f,-1f);
+        vc.addVertex(pose.pose(),0f,1f,-0.005f).setColor(-1).setUv(1f,0f).setOverlay(packedOverlay).setLight(packedLight).setNormal(pose,0f,0f,-1f);
+        vc.addVertex(pose.pose(),1f,1f,-0.005f).setColor(-1).setUv(0f,0f).setOverlay(packedOverlay).setLight(packedLight).setNormal(pose,0f,0f,-1f);
 
         poseStack.popPose();
     }
