@@ -13,10 +13,15 @@ jobs:
           java-version: "21"
           distribution: "temurin"
       - run: chmod +x gradlew
-      - name: Build
+      - name: Find ResourceLocation in MC jar
         run: |
           rm -rf ~/.gradle
-          ./gradlew --info build
+          # Run just the dependency resolution step to download MC
+          ./gradlew dependencies --configuration compileClasspath 2>&1 | tail -5 || true
+          # Find the MC jar and search for ResourceLocation
+          find ~/.gradle -name "*.jar" 2>/dev/null | xargs -I{} bash -c 'jar tf "$1" 2>/dev/null | grep -i "ResourceLocation" | head -3 | sed "s|^|{}: |"' _ {} 2>/dev/null | head -20
+      - name: Build
+        run: ./gradlew build
       - uses: actions/upload-artifact@v4
         with:
           name: citfabric-jar
