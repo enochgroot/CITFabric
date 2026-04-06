@@ -13,12 +13,11 @@ jobs:
         with:
           java-version: "21"
           distribution: "temurin"
-      - uses: gradle/actions/setup-gradle@v4
       - run: chmod +x gradlew
-      - name: Clear Loom cache
-        run: rm -rf ~/.gradle/caches/fabric-loom* ~/.gradle/caches/com.mojang
-      - name: Build
-        run: ./gradlew --no-build-cache build
+      - name: Build (fresh, no cache)
+        run: |
+          rm -rf ~/.gradle
+          ./gradlew build
       - uses: actions/upload-artifact@v4
         with:
           name: citfabric-1.0.0-MC1.21.11
