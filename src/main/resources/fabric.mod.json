@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "id": "citfabric",
+  "version": "1.0.0",
+  "name": "CITFabric",
+  "description": "Custom Item Textures for Fabric 1.21.11 — reads OptiFine CIT packs natively",
+  "environment": "client",
+  "entrypoints": {"client": ["com.citfabric.CITFabric"]},
+  "mixins": ["citfabric.mixins.json"],
+  "depends": {"fabricloader": ">=0.15.0","fabric-api": "*","minecraft": ">=1.21"}
+}
