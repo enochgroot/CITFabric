@@ -16,7 +16,7 @@ jobs:
       - name: Build
         run: |
           rm -rf ~/.gradle
-          ./gradlew --info build 2>&1 | head -300
+          ./gradlew --info build
       - uses: actions/upload-artifact@v4
         with:
           name: citfabric-jar
