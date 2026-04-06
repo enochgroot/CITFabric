@@ -1,0 +1,7 @@
+{
+  "required": false,
+  "package": "com.citfabric.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": ["ItemRendererMixin"],
+  "injectors": {"defaultRequire": 0}
+}
