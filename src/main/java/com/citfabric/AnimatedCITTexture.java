@@ -19,7 +19,9 @@ public class AnimatedCITTexture extends DynamicTexture {
     private int tickTimer = 0;
 
     public AnimatedCITTexture(ResourceManager manager, ResourceLocation texLoc, ResourceLocation mcmetaLoc) throws Exception {
-        super(16, 16, false);
+        // Init with blank 16x16 image — will be updated on first tick
+        super(new NativeImage(NativeImage.Format.RGBA, 16, 16, false));
+
         NativeImage strip;
         Optional<Resource> texRes = manager.getResource(texLoc);
         if (texRes.isEmpty()) throw new IllegalArgumentException("Texture not found: " + texLoc);
@@ -35,6 +37,7 @@ public class AnimatedCITTexture extends DynamicTexture {
             frames.add(frame);
         }
         strip.close();
+
         Optional<Resource> metaRes = manager.getResource(mcmetaLoc);
         if (metaRes.isPresent()) {
             try (InputStream is = metaRes.get().open(); InputStreamReader rdr = new InputStreamReader(is)) {
