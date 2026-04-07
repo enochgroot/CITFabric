@@ -2,6 +2,6 @@
   "required": false,
   "package": "com.citfabric.mixin",
   "compatibilityLevel": "JAVA_21",
-  "client": ["ItemRendererMixin"],
+  "client": ["ItemModelResolverMixin", "ModelManagerMixin"],
   "injectors": {"defaultRequire": 0}
 }
