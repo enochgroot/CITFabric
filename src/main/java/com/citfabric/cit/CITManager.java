@@ -2,10 +2,10 @@ package com.citfabric.cit;
 
 import com.citfabric.model.CITConditionalModel;
 import com.citfabric.model.CITItemModel;
+import com.mojang.blaze3d.platform.NativeImage;
 import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.texture.DynamicTexture;
-import net.minecraft.client.renderer.texture.NativeImage;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.ResourceManager;
 import java.io.InputStream;
@@ -13,8 +13,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-// Loads CIT rules from resource packs and creates ItemModel objects for each rule.
-// Scans: optifine/cit, citresewn/cit, mcpatcher/cit directories.
 public class CITManager implements SimpleSynchronousResourceReloadListener {
 
     public static final CITManager INSTANCE = new CITManager();
@@ -27,12 +25,10 @@ public class CITManager implements SimpleSynchronousResourceReloadListener {
 
     @Override
     public void onResourceManagerReload(ResourceManager manager) {
-        // Release old textures
         Minecraft mc = Minecraft.getInstance();
         for (CITRule rule : rules) {
-            if (rule.bakedModel instanceof CITItemModel) {
-                Identifier tid = ((CITItemModel)rule.bakedModel).getTextureId();
-                try { mc.getTextureManager().release(tid); } catch (Exception ignored) {}
+            if (rule.bakedModel instanceof CITItemModel m) {
+                try { mc.getTextureManager().release(m.getTextureId()); } catch (Exception ignored) {}
             }
         }
         rules.clear();
@@ -45,27 +41,23 @@ public class CITManager implements SimpleSynchronousResourceReloadListener {
                 try (InputStream is = e.getValue().open()) {
                     String content = new String(is.readAllBytes(), StandardCharsets.UTF_8);
                     CITRule rule = CITProperties.parse(content, e.getKey());
-                    if (rule != null) {
-                        // Load the texture and create an ItemModel immediately
-                        if (loadModel(rule, manager, mc)) {
-                            rules.add(rule);
-                            count++;
-                            System.out.println("[CITFabric] Loaded: " + rule.debugName);
-                        }
+                    if (rule != null && loadModel(rule, manager, mc)) {
+                        rules.add(rule);
+                        count++;
+                        System.out.println("[CITFabric] Loaded: " + rule.debugName);
                     }
                 } catch (Exception ex) {
                     System.err.println("[CITFabric] Error " + e.getKey() + ": " + ex.getMessage());
                 }
             }
         }
-        System.out.println("[CITFabric] Loaded " + count + " CIT rules with models");
+        System.out.println("[CITFabric] Loaded " + count + " CIT rules");
     }
 
     private boolean loadModel(CITRule rule, ResourceManager manager, Minecraft mc) {
         if (rule.texturePath == null) return false;
         try {
-            // Texture is at assets/<ns>/optifine/cit/.../<name>.png
-            // ResourceManager looks up assets/<ns>/<path>
+            // CIT textures at assets/<ns>/optifine/cit/.../<name>.png (no textures/ prefix)
             Identifier resourceId = Identifier.fromNamespaceAndPath(
                 rule.texturePath.getNamespace(),
                 rule.texturePath.getPath() + ".png"
@@ -79,16 +71,14 @@ public class CITManager implements SimpleSynchronousResourceReloadListener {
             try (InputStream is = res.get().open()) {
                 img = NativeImage.read(is);
             }
-            // Register as DynamicTexture
-            String texId = rule.texturePath.getPath()
-                .replaceAll("[^a-z0-9_./]", "_").toLowerCase();
-            Identifier textureKey = Identifier.fromNamespaceAndPath("citfabric", "cit/" + texId);
+            String texPath = rule.texturePath.getPath()
+                .replaceAll("[^a-z0-9_./]","_").toLowerCase();
+            Identifier textureKey = Identifier.fromNamespaceAndPath("citfabric","cit/"+texPath);
             mc.getTextureManager().register(textureKey, new DynamicTexture(img));
-            // Create ItemModel
             rule.bakedModel = new CITItemModel(textureKey);
             return true;
         } catch (Exception e) {
-            System.err.println("[CITFabric] Model load failed for " + rule.debugName + ": " + e.getMessage());
+            System.err.println("[CITFabric] Texture load failed for "+rule.debugName+": "+e.getMessage());
             return false;
         }
     }
