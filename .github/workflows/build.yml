@@ -1,35 +1,20 @@
 name: Build CITFabric
-on:
-  push:
-    branches: [main]
-  workflow_dispatch:
+on: [push, workflow_dispatch]
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
-        with:
-          java-version: "21"
-          distribution: "temurin"
-      - run: chmod +x gradlew
-      - name: Build (let it fail) then search MC jar
-        run: |
-          rm -rf ~/.gradle
-          ./gradlew build || true
-          echo "=== Searching MC jars for ResourceLocation ==="
-          find ~/.gradle -name "minecraft-1.21.11*.jar" -o -name "*merged*.jar" -o -name "*mapped*.jar" 2>/dev/null | head -10
-          echo "=== All jars ==="
-          find ~/.gradle/caches -name "*.jar" 2>/dev/null | head -20
-          echo "=== ResourceLocation search ==="
-          for f in $(find ~/.gradle/caches -name "*.jar" 2>/dev/null); do
-            result=$(jar tf "$f" 2>/dev/null | grep -i "ResourceLocation" | head -2)
-            if [ -n "$result" ]; then
-              echo "JAR: $f"
-              echo "$result"
-            fi
-          done
+        with: {java-version: "21", distribution: "temurin"}
+      - uses: gradle/actions/setup-gradle@v4
+      - run: chmod +x gradlew && ./gradlew --no-build-cache build
+      - run: ls -lh build/libs/
       - uses: actions/upload-artifact@v4
         with:
-          name: citfabric-jar
-          path: build/libs/*.jar
+          name: citfabric-v1-MC1.21.11
+          path: |
+            build/libs/*.jar
+            !build/libs/*-sources.jar
+            !build/libs/*-dev.jar
+          if-no-files-found: warn
