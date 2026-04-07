@@ -1,0 +1,76 @@
+package com.citfabric.cit;
+
+import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.resources.ResourceManager;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
+
+/**
+ * Loads and manages all CIT rules from resource packs.
+ * Scans:
+ *   assets/*/optifine/cit/**  *.properties
+ *   assets/*/citresewn/cit/** *.properties
+ *   assets/*/mcpatcher/cit/** *.properties
+ */
+public class CITManager implements SimpleSynchronousResourceReloadListener {
+
+    public static final CITManager INSTANCE = new CITManager();
+    private static final ResourceLocation ID = ResourceLocation.fromNamespaceAndPath("citfabric", "cit_loader");
+
+    // All loaded rules, in priority order
+    private final List<CITRule> rules = new CopyOnWriteArrayList<>();
+
+    private CITManager() {}
+
+    @Override
+    public ResourceLocation getFabricId() { return ID; }
+
+    @Override
+    public void onResourceManagerReload(ResourceManager manager) {
+        rules.clear();
+        int count = 0;
+
+        // Scan all CIT directories across all resource packs
+        for (String prefix : new String[]{"optifine/cit", "citresewn/cit", "mcpatcher/cit"}) {
+            Map<ResourceLocation, net.minecraft.server.packs.resources.Resource> found =
+                manager.listResources(prefix, id -> id.getPath().endsWith(".properties"));
+
+            for (Map.Entry<ResourceLocation, net.minecraft.server.packs.resources.Resource> entry : found.entrySet()) {
+                ResourceLocation loc = entry.getKey();
+                try (InputStream is = entry.getValue().open()) {
+                    String content = new String(is.readAllBytes(), StandardCharsets.UTF_8);
+                    CITRule rule = CITProperties.parse(content, loc);
+                    if (rule != null) {
+                        rules.add(rule);
+                        count++;
+                        System.out.println("[CITFabric] Loaded rule: " + rule.debugName);
+                    }
+                } catch (Exception e) {
+                    System.err.println("[CITFabric] Error loading " + loc + ": " + e.getMessage());
+                }
+            }
+        }
+
+        System.out.println("[CITFabric] Loaded " + count + " CIT rules total");
+    }
+
+    /**
+     * Find the first CIT rule matching the given ItemStack.
+     * Returns null if no match.
+     */
+    public CITRule findMatch(net.minecraft.world.item.ItemStack stack) {
+        for (CITRule rule : rules) {
+            if (rule.matches(stack)) return rule;
+        }
+        return null;
+    }
+
+    public List<CITRule> getAllRules() {
+        return Collections.unmodifiableList(rules);
+    }
+
+    public boolean hasRules() { return !rules.isEmpty(); }
+}
