@@ -13,8 +13,6 @@ public class CITRule {
     public final Identifier texturePath;
     public final Identifier modelPath;
     public final String debugName;
-
-    // Set after model baking
     public volatile net.minecraft.client.renderer.item.ItemModel bakedModel = null;
 
     public CITRule(Set<Identifier> items, Set<Identifier> enchants,
@@ -30,25 +28,23 @@ public class CITRule {
     public boolean matches(ItemStack stack) {
         if (stack.isEmpty()) return false;
 
-        // Check item type
         if (!matchItems.isEmpty()) {
             Identifier itemId = BuiltInRegistries.ITEM.getKey(stack.getItem());
             if (!matchItems.contains(itemId)) return false;
         }
 
-        // Check enchantments using ItemStack.getEnchantments() (1.21.11 API)
         if (!matchEnchants.isEmpty()) {
             ItemEnchantments enchantments = stack.getEnchantments();
             if (enchantments.isEmpty()) return false;
+            // In 1.21.11: ResourceKey.identifier() replaces ResourceKey.location()
             boolean hasAll = matchEnchants.stream().allMatch(enchId ->
                 enchantments.keySet().stream().anyMatch(holder ->
                     holder.unwrapKey()
-                        .map(k -> k.location().equals(enchId))
+                        .map(k -> k.identifier().equals(enchId))
                         .orElse(false)));
             if (!hasAll) return false;
         }
 
-        // Check display name (getCustomName() returns null if no custom name in 1.21.11)
         if (matchName != null && !matchName.isEmpty()) {
             net.minecraft.network.chat.Component customName = stack.getCustomName();
             if (customName == null) return false;
