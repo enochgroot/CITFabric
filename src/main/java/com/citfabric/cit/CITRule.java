@@ -1,31 +1,24 @@
 package com.citfabric.cit;
 
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.enchantment.EnchantmentHelper;
+import net.minecraft.world.item.enchantment.ItemEnchantments;
 import java.util.*;
 
-/**
- * One CIT override rule parsed from a .properties file.
- * Supported conditions: type=item, items=..., enchantments=..., nbt.display.Name=...
- */
 public class CITRule {
-    // Conditions
-    public final Set<ResourceLocation> matchItems;      // items= (empty = any)
-    public final Set<ResourceLocation> matchEnchants;   // enchantments= (empty = any)
-    public final String matchName;                      // name= (null = any)
-    // Override
-    public final ResourceLocation texturePath;          // full path to texture PNG
-    public final ResourceLocation modelPath;            // optional: full path to model
-    // Display name for debugging
+    public final Set<Identifier> matchItems;
+    public final Set<Identifier> matchEnchants;
+    public final String matchName;
+    public final Identifier texturePath;
+    public final Identifier modelPath;
     public final String debugName;
-    // Loaded item model (set after baking)
+
+    // Set after model baking
     public volatile net.minecraft.client.renderer.item.ItemModel bakedModel = null;
 
-    public CITRule(Set<ResourceLocation> items, Set<ResourceLocation> enchants,
-                   String name, ResourceLocation texture, ResourceLocation model,
-                   String debugName) {
+    public CITRule(Set<Identifier> items, Set<Identifier> enchants,
+                   String name, Identifier texture, Identifier model, String debugName) {
         this.matchItems    = Collections.unmodifiableSet(items);
         this.matchEnchants = Collections.unmodifiableSet(enchants);
         this.matchName     = name;
@@ -39,31 +32,32 @@ public class CITRule {
 
         // Check item type
         if (!matchItems.isEmpty()) {
-            ResourceLocation itemId = BuiltInRegistries.ITEM.getKey(stack.getItem());
+            Identifier itemId = BuiltInRegistries.ITEM.getKey(stack.getItem());
             if (!matchItems.contains(itemId)) return false;
         }
 
-        // Check enchantments
+        // Check enchantments using ItemStack.getEnchantments() (1.21.11 API)
         if (!matchEnchants.isEmpty()) {
-            var enchMap = EnchantmentHelper.getEnchantmentsForCrafting(stack);
+            ItemEnchantments enchantments = stack.getEnchantments();
+            if (enchantments.isEmpty()) return false;
             boolean hasAll = matchEnchants.stream().allMatch(enchId ->
-                enchMap.keySet().stream().anyMatch(holder ->
-                    holder.unwrapKey().map(k -> k.location().equals(enchId)).orElse(false)));
+                enchantments.keySet().stream().anyMatch(holder ->
+                    holder.unwrapKey()
+                        .map(k -> k.location().equals(enchId))
+                        .orElse(false)));
             if (!hasAll) return false;
         }
 
-        // Check display name
+        // Check display name (getCustomName() returns null if no custom name in 1.21.11)
         if (matchName != null && !matchName.isEmpty()) {
-            if (!stack.hasCustomHoverName()) return false;
-            String name = stack.getHoverName().getString();
+            net.minecraft.network.chat.Component customName = stack.getCustomName();
+            if (customName == null) return false;
+            String name = customName.getString();
             if (!name.contains(matchName) && !name.equalsIgnoreCase(matchName)) return false;
         }
 
         return true;
     }
 
-    @Override
-    public String toString() {
-        return "CITRule[" + debugName + "]";
-    }
+    @Override public String toString() { return "CITRule[" + debugName + "]"; }
 }
