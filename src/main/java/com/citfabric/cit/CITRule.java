@@ -30,13 +30,12 @@ public class CITRule {
 
         if (!matchItems.isEmpty()) {
             Identifier itemId = BuiltInRegistries.ITEM.getKey(stack.getItem());
-            if (!matchItems.contains(itemId)) return false;
+            if (itemId == null || !matchItems.contains(itemId)) return false;
         }
 
         if (!matchEnchants.isEmpty()) {
             ItemEnchantments enchantments = stack.getEnchantments();
             if (enchantments.isEmpty()) return false;
-            // In 1.21.11: ResourceKey.identifier() replaces ResourceKey.location()
             boolean hasAll = matchEnchants.stream().allMatch(enchId ->
                 enchantments.keySet().stream().anyMatch(holder ->
                     holder.unwrapKey()
@@ -46,10 +45,16 @@ public class CITRule {
         }
 
         if (matchName != null && !matchName.isEmpty()) {
+            // Try getCustomName() first (set by anvil rename)
             net.minecraft.network.chat.Component customName = stack.getCustomName();
-            if (customName == null) return false;
-            String name = customName.getString();
-            if (!name.contains(matchName) && !name.equalsIgnoreCase(matchName)) return false;
+            if (customName != null) {
+                String nameStr = customName.getString();
+                if (!nameStr.equalsIgnoreCase(matchName) && !nameStr.contains(matchName)) return false;
+            } else {
+                // Also try getHoverName() for display name
+                String hoverName = stack.getHoverName().getString();
+                if (!hoverName.equalsIgnoreCase(matchName) && !hoverName.contains(matchName)) return false;
+            }
         }
 
         return true;
