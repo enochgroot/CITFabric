@@ -3,7 +3,9 @@
   "id": "citfabric",
   "version": "1.0.0",
   "name": "CITFabric",
+  "description": "Custom Item Textures for Fabric 1.21.11 — reads OptiFine/CIT Resewn .properties packs",
   "environment": "client",
-  "entrypoints": {"client": ["com.citfabric.CITFabric"]},
-  "depends": {"fabricloader": ">=0.15.0","fabric-api": "*","minecraft": ">=1.21"}
+  "entrypoints": {"client": ["com.citfabric.CITFabricMod"]},
+  "mixins": ["citfabric.mixins.json"],
+  "depends": {"fabricloader": ">=0.15.0", "fabric-api": "*", "minecraft": ">=1.21"}
 }
