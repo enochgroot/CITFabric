@@ -14,11 +14,10 @@ import net.minecraft.world.item.ItemStack;
 import org.joml.Vector3f;
 import java.util.List;
 
-// ItemModel that renders a flat textured quad using a DynamicTexture.
-// Uses RenderTypes.itemEntityTranslucentCull so the atlas is NOT required.
-// BakedQuad positions: model space 0,0,0 to 1,1,0 (standard item/generated extent).
-// UV: 0,0 to 1,1 covering full DynamicTexture.
-// sprite=null: BakedQuad sprite used only for sorting/particles, non-critical.
+// ItemModel that renders a flat textured quad from a DynamicTexture (no atlas needed).
+// BakedQuad positions: 0,0,0 to 1,1,0 in item model space.
+// UV covers full texture: 0,0 to 1,1.
+// sprite=null is safe: sprite field used only for particles/sorting, not rendering.
 public class CITItemModel implements ItemModel {
 
     private final Identifier textureId;
@@ -29,6 +28,8 @@ public class CITItemModel implements ItemModel {
         this.quads = buildQuads();
     }
 
+    public Identifier getTextureId() { return textureId; }
+
     // Pack two 32-bit floats into a 64-bit long (MC 1.21.11 BakedQuad UV format)
     private static long packUV(float u, float v) {
         return (long) Float.floatToRawIntBits(u)
@@ -36,7 +37,7 @@ public class CITItemModel implements ItemModel {
     }
 
     private List<BakedQuad> buildQuads() {
-        // Front face (facing +Z / SOUTH): counter-clockwise when looking at it
+        // Front face (facing SOUTH / +Z)
         BakedQuad front = new BakedQuad(
             new Vector3f(0f, 0f, 0.005f),
             new Vector3f(1f, 0f, 0.005f),
@@ -45,7 +46,7 @@ public class CITItemModel implements ItemModel {
             packUV(0f, 1f), packUV(1f, 1f), packUV(1f, 0f), packUV(0f, 0f),
             -1, Direction.SOUTH, null, false, 0
         );
-        // Back face (facing -Z / NORTH): reversed winding
+        // Back face (facing NORTH / -Z)
         BakedQuad back = new BakedQuad(
             new Vector3f(1f, 0f, -0.005f),
             new Vector3f(0f, 0f, -0.005f),
@@ -61,12 +62,9 @@ public class CITItemModel implements ItemModel {
     public void update(ItemStackRenderState state, ItemStack stack,
                        ItemModelResolver resolver, ItemDisplayContext context,
                        ClientLevel level, ItemOwner owner, int seed) {
-        // Get a new render layer and configure it for our DynamicTexture
         ItemStackRenderState.LayerRenderState layer = state.newLayer();
         layer.setRenderType(RenderTypes.itemEntityTranslucentCull(textureId));
         layer.setUsesBlockLight(false);
-
-        // Add flat-face quads (no atlas needed)
         List<BakedQuad> quadList = layer.prepareQuadList();
         quadList.addAll(quads);
     }
