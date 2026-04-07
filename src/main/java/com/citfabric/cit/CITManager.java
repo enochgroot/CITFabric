@@ -1,6 +1,5 @@
 package com.citfabric.cit;
 
-import com.citfabric.model.CITConditionalModel;
 import com.citfabric.model.CITItemModel;
 import com.mojang.blaze3d.platform.NativeImage;
 import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
@@ -57,7 +56,6 @@ public class CITManager implements SimpleSynchronousResourceReloadListener {
     private boolean loadModel(CITRule rule, ResourceManager manager, Minecraft mc) {
         if (rule.texturePath == null) return false;
         try {
-            // CIT textures at assets/<ns>/optifine/cit/.../<name>.png (no textures/ prefix)
             Identifier resourceId = Identifier.fromNamespaceAndPath(
                 rule.texturePath.getNamespace(),
                 rule.texturePath.getPath() + ".png"
@@ -74,7 +72,9 @@ public class CITManager implements SimpleSynchronousResourceReloadListener {
             String texPath = rule.texturePath.getPath()
                 .replaceAll("[^a-z0-9_./]","_").toLowerCase();
             Identifier textureKey = Identifier.fromNamespaceAndPath("citfabric","cit/"+texPath);
-            mc.getTextureManager().register(textureKey, new DynamicTexture(img));
+            // DynamicTexture in 1.21.11: (Supplier<String> debugLabel, NativeImage pixels)
+            mc.getTextureManager().register(textureKey,
+                new DynamicTexture(() -> "citfabric_cit", img));
             rule.bakedModel = new CITItemModel(textureKey);
             return true;
         } catch (Exception e) {
