@@ -14,13 +14,10 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-// Confirmed 1.21.11 signature from Mojang mappings:
-//   appendItemLayers(ItemStackRenderState, ItemStack, ItemDisplayContext, int, Level)
-//   ItemModel.update(ItemStackRenderState, ItemStack, ItemModelResolver, ItemDisplayContext, ClientLevel, ItemOwner, int)
-@Mixin(targets = "net.minecraft.client.renderer.item.ItemModelResolver")
+@Mixin(value = ItemModelResolver.class, priority = 900)
 public class ItemModelResolverMixin {
 
-    @Inject(method = "appendItemLayers", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "appendItemLayers", at = @At("HEAD"), cancellable = true, require = 0)
     private void citfabric$applyCIT(
             ItemStackRenderState renderState,
             ItemStack stack,
@@ -34,13 +31,11 @@ public class ItemModelResolverMixin {
         if (rule == null || rule.bakedModel == null) return;
 
         renderState.clear();
-        // appendItemLayers takes Level but ItemModel.update takes ClientLevel
-        // On client side Level is always ClientLevel, safe cast
         rule.bakedModel.update(renderState, stack,
             (ItemModelResolver)(Object)this,
             displayContext,
             (ClientLevel) level,
-            null,   // ItemOwner — null is fine for static item models
+            null,
             seed);
         ci.cancel();
     }
