@@ -13,36 +13,39 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.util.*;
 
-// After ModelManager.apply() completes, wrap item models that have CIT rules
-// with CITConditionalModel. At this point rule.bakedModel is already set
-// by CITManager.onResourceManagerReload().
-@Mixin(ModelManager.class)
+@Mixin(value = ModelManager.class, priority = 900)
 public class ModelManagerMixin {
 
     @Shadow private Map<Identifier, ItemModel> bakedItemStackModels;
 
-    @Inject(method = "apply", at = @At("TAIL"))
+    @Inject(method = "apply", at = @At("TAIL"), require = 0)
     private void citfabric$wrapCITModels(CallbackInfo ci) {
-        if (!CITManager.INSTANCE.hasRules() || bakedItemStackModels == null) return;
-
-        // Group rules by item type
-        Map<Identifier, List<CITRule>> byItem = new LinkedHashMap<>();
-        for (CITRule rule : CITManager.INSTANCE.getAllRules()) {
-            if (rule.bakedModel == null) continue;
-            for (Identifier id : rule.matchItems) {
-                byItem.computeIfAbsent(id, k -> new ArrayList<>()).add(rule);
+        try {
+            if (!CITManager.INSTANCE.hasRules()) return;
+            if (bakedItemStackModels == null) {
+                System.out.println("[CITFabric] bakedItemStackModels is null, skipping wrap");
+                return;
             }
-        }
 
-        int wrapped = 0;
-        for (Map.Entry<Identifier, List<CITRule>> e : byItem.entrySet()) {
-            ItemModel orig = bakedItemStackModels.get(e.getKey());
-            if (orig != null && !(orig instanceof CITConditionalModel)) {
-                bakedItemStackModels.put(e.getKey(), new CITConditionalModel(orig, e.getValue()));
-                wrapped++;
+            Map<Identifier, List<CITRule>> byItem = new LinkedHashMap<>();
+            for (CITRule rule : CITManager.INSTANCE.getAllRules()) {
+                if (rule.bakedModel == null) continue;
+                for (Identifier id : rule.matchItems) {
+                    byItem.computeIfAbsent(id, k -> new ArrayList<>()).add(rule);
+                }
             }
+
+            int wrapped = 0;
+            for (Map.Entry<Identifier, List<CITRule>> e : byItem.entrySet()) {
+                ItemModel orig = bakedItemStackModels.get(e.getKey());
+                if (orig != null && !(orig instanceof CITConditionalModel)) {
+                    bakedItemStackModels.put(e.getKey(), new CITConditionalModel(orig, e.getValue()));
+                    wrapped++;
+                }
+            }
+            System.out.println("[CITFabric] ModelManagerMixin.apply() complete, wrapped " + wrapped + " models");
+        } catch (Exception ex) {
+            System.err.println("[CITFabric] ModelManagerMixin error: " + ex.getMessage());
         }
-        if (wrapped > 0)
-            System.out.println("[CITFabric] Wrapped " + wrapped + " item model(s)");
     }
 }
