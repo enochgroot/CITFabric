@@ -1,7 +1,7 @@
-plugins { id 'fabric-loom' version '1.7-SNAPSHOT' }
-// version is read from gradle.properties
+plugins { id 'net.fabricmc.fabric-loom-remap' version '1.14-SNAPSHOT' }
+// version read from gradle.properties (set to 4.0.0)
 group = 'com.citfabric'
-base { archivesName = 'CITFabric' }
+archivesBaseName = 'CITFabric'
 repositories {
     maven { name = 'Fabric'; url = 'https://maven.fabricmc.net/' }
     mavenCentral()
