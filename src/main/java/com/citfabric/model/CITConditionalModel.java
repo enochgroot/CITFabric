@@ -1,5 +1,6 @@
 package com.citfabric.model;
 
+import com.citfabric.cit.CITManager;
 import com.citfabric.cit.CITRule;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.item.ItemModel;
@@ -10,12 +11,7 @@ import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import java.util.List;
 
-// Wraps an item's original ItemModel and applies CIT overrides when conditions match.
-// ItemModel.update signature confirmed from 1.21.11 Mojang mappings (BlockModelWrapper):
-//   void update(ItemStackRenderState, ItemStack, ItemModelResolver,
-//               ItemDisplayContext, ClientLevel, ItemOwner, int)
 public class CITConditionalModel implements ItemModel {
-
     private final ItemModel original;
     private final List<CITRule> rules;
 
